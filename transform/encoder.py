@@ -1,7 +1,7 @@
 '''
 @Author: your name
 @Date: 2020-05-25 14:47:38
-@LastEditTime: 2020-05-25 16:11:21
+@LastEditTime: 2020-05-25 16:53:27
 @LastEditors: Please set LastEditors
 @Description: In User Settings Edit
 @FilePath: /dataprocess/transform/encoder.py
@@ -50,7 +50,29 @@ class Encoder():
         self.target_encoder = TargetEncoder(
             cols=self.target_encoder_features, return_df=True, handle_unknown=handle_unknown)
 
-    def fit(self, X_train, X_val=None, y_train=None, y_val=None, method_mapper=None):
+    def fit(self, x_train, x_val=None, y_train=None, y_val=None, method_mapper=None):
+        """
+        Parameters
+        ----------
+
+        x_train: pd.DataFrame
+
+        x_val: pd.DataFrame
+
+        y_train: pd.DataFrame
+
+        y_val: pd.DataFrame
+
+        method_mapper: dict
+            a mapping of feature to EncodeMethod
+            example mapping: 
+            {
+                'feature1': OrdinalEncoder,
+                'feature2': OneHotEncoder,
+                'feature3': CountEncoder,
+                'feature4': TargetEncoder,
+            }
+        """
         for feat in method_mapper:
             if method_mapper[feat] == 'OrdinalEncoder':
                 self.ordinal_encoder_features.append(feat)
@@ -66,38 +88,60 @@ class Encoder():
 
         if self.spark is None:
             if len(self.ordinal_encoder_features) != 0 or len(self.onehot_encoder_features) != 0:
-                X_whole = X_train.append(X_val)
+                x_whole = x_train.append(x_val)
                 y_whole = None
                 if not y_train is None and not y_val is None:
                     y_whole = y_train.append(y_val)
 
-                X_whole = self.ordinal_encoder.fit_transform(X_whole, y_whole)
-                X_whole = self.onehot_encoder.fit_transform(X_whole, y_whole)
-                X_train = X_whole[:len(X_train)]
-                X_val = X_whole[len(X_train):]
+                x_whole = self.ordinal_encoder.fit_transform(x_whole, y_whole)
+                x_whole = self.onehot_encoder.fit_transform(x_whole, y_whole)
+                x_train = x_whole[:len(x_train)]
+                x_val = x_whole[len(x_train):]
 
-            X_train = self.count_encoder.fit_transform(X_train, y_train)
-            X_val = self.count_encoder.transform(X_val, y_val)
-            X_train = self.target_encoder.fit_transform(X_train, y_train)
-            X_val = self.target_encoder.transform(X_val, y_val)
+            x_train = self.count_encoder.fit_transform(x_train, y_train)
+            x_val = self.count_encoder.transform(x_val, y_val)
+            x_train = self.target_encoder.fit_transform(x_train, y_train)
+            x_val = self.target_encoder.transform(x_val, y_val)
 
             if self.save_encoder:
                 self.save_encoder()
-        return X_train, y_train, X_val, y_val
+        return x_train, y_train, x_val, y_val
 
-    def transform(self, X, y=None):
-        X = self.ordinal_encoder.transform(X, y)
-        X = self.onehot_encoder.transform(X, y)
-        X = self.count_encoder.transform(X, y)
-        X = self.target_encoder.transform(X, y)
-        return X, y
+    def transform(self, x, y=None):
+        x = self.ordinal_encoder.transform(x, y)
+        x = self.onehot_encoder.transform(x, y)
+        x = self.count_encoder.transform(x, y)
+        x = self.target_encoder.transform(x, y)
+        return x, y
 
-    def fit_transform(self, X_train, X_val=None, y_train=None, y_val=None, method_mapper=None):
-        self.fit(X_train, X_val, y_train, y_val, method_mapper)
-        X_train, y_train = self.transform(X_train, y_train)
-        if X_val is not None:
-            X_val, y_val = self.transform(X_val, y_val)
-        return X_train, y_train, X_val, y_val
+    def fit_transform(self, x_train, x_val=None, y_train=None, y_val=None, method_mapper=None):
+        """
+        Parameters
+        ----------
+
+        x_train: pd.DataFrame
+
+        x_val: pd.DataFrame
+
+        y_train: pd.DataFrame
+
+        y_val: pd.DataFrame
+        
+        method_mapper: dict
+            a mapping of feature to EncodeMethod
+            example mapping: 
+            {
+                'feature1': OrdinalEncoder,
+                'feature2': OneHotEncoder,
+                'feature3': CountEncoder,
+                'feature4': TargetEncoder,
+            }
+        """
+        self.fit(x_train, x_val, y_train, y_val, method_mapper)
+        x_train, y_train = self.transform(x_train, y_train)
+        if x_val is not None:
+            x_val, y_val = self.transform(x_val, y_val)
+        return x_train, y_train, x_val, y_val
 
     def save_encoder(self):
         now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time()))
@@ -149,6 +193,6 @@ mapper = {
     'c':'CountEncoder',
     'd':'TargetEncoder',
 }
-# encoder.fit(X_train=data[['a', 'b', 'c', 'd']],  y_train=data['e'], method_mapper=mapper)
-# print(encoder.transform(X=data[['a', 'b', 'c', 'd']]))
-print(encoder.fit_transform(X_train=data[['a', 'b', 'c', 'd']],  y_train=data['e'], method_mapper=mapper))
+# encoder.fit(x_train=data[['a', 'b', 'c', 'd']],  y_train=data['e'], method_mapper=mapper)
+# print(encoder.transform(x=data[['a', 'b', 'c', 'd']]))
+print(encoder.fit_transform(x_train=data[['a', 'b', 'c', 'd']],  y_train=data['e'], method_mapper=mapper))

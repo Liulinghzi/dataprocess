@@ -1,7 +1,7 @@
 '''
 @Author: your name
 @Date: 2020-05-25 18:18:20
-@LastEditTime: 2020-05-26 12:26:11
+@LastEditTime: 2020-05-26 12:49:10
 @LastEditors: Please set LastEditors
 @Description: In User Settings Edit
 @FilePath: /dataprocess/sequence/seq.py
@@ -10,7 +10,7 @@
 
 import pandas as pd
 import numpy as np
-
+import multiprocessing
 
 def make_hist_sequences(data, groupby_feature, behavior_features, attribute_features, time_feature, max_len, keep_size=False):
     """
@@ -51,8 +51,19 @@ def make_hist_sequences(data, groupby_feature, behavior_features, attribute_feat
 
     hist_dict = {}
     hist_dict[groupby_feature] = groupby_feature_unique_value
-    for idx, feat in enumerate(behavior_features):
-        hist_dict['hist_'+feat] = [list(behavior_seq[:max_len]) for behavior_seq in behavior_features_values[idx]]
+    
+    p = multiprocessing.Pool(multiprocessing.cpu_count())
+    
+    def process(behavior_features_value):
+        # hist_dict['hist_'+feat] =
+        max_len=50 
+        return 1
+        # return [list(behavior_seq[:max_len]) if len(behavior_seq)>max_len else list(behavior_seq[:max_len]) + ['0']*(max_len-len(behavior_seq)) for behavior_seq in behavior_features_value]
+    res = p.map(process, [1])
+
+    # for idx, feat in enumerate(behavior_features):
+    #     hist_dict['hist_'+feat] = [list(behavior_seq[:max_len]) if len(behavior_seq)>max_len else list(behavior_seq[:max_len]) + ['0']*(max_len-len(behavior_seq)) for behavior_seq in behavior_features_values[idx]]
+
     for idx, feat in enumerate(attribute_features):
         hist_dict[feat] = [v for v in attribute_features_values[idx]]
 
